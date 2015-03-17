@@ -1,0 +1,56 @@
+<?php
+/**
+ * @file
+ * The main module file. Contains hooks and utility functions.
+ */
+define('PANELS_CACHE_CONTROL_SEED_ROTATION_INTERVAL', 86400);
+
+/**
+ * Implementation of hook_cron().
+ * Every interval, rotate the seed (used to generate the context-cookies).
+ * (Each rotation will invalidate the varnish-cache for previously-cached
+ * contexts).
+ */
+function panels_cache_control_cron() {
+  $age_of_current_seed = time() - variable_get('panels_cache_control_seed_key_last_changed', 0);
+  $interval = variable_get('panels_cache_control_seed_key_rotation_interval', PANELS_CACHE_CONTROL_SEED_ROTATION_INTERVAL);
+  if ($age_of_current_seed > $interval) {
+    panels_cache_control_rotate_seed_key();
+  }
+}
+
+/**
+ * Rotate the seed key.
+ *
+ * @return String
+ * The new 32-character seed key.
+ */
+function panels_cache_control_rotate_seed_key() {
+  $seed = '';
+  for ($i=0; $i<32; $i++) {
+    // get a random character from the printable ASCII character set: 32-176
+    $seed += chr(mt_rand(32, 176));
+  }
+  variable_set('panels_cache_control_seed_key', $seed);
+  variable_set('panels_cache_control_seed_key_last_changed', time());
+  return $seed;
+}
+
+function panels_cache_control_get_seed() {
+  $seed = variable_get('panels_cache_control_seed_key', FALSE);
+  if (!$seed) {
+    return panels_cache_control_rotate_seed_key();
+  }
+  return $seed;
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function panels_cache_control_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'page_manager' || $module == 'panels' || $module == 'ctools') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+

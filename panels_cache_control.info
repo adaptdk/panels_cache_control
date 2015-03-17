@@ -1,0 +1,6 @@
+name = Panels cache control
+description = "Control the HTTP cache control header in panels."
+package = Caching
+core = 7.x
+php = 5.1
+
